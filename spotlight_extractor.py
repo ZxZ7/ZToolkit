@@ -8,33 +8,33 @@ from matplotlib import pyplot as plt
 from datetime import date
 
 
-def define_key_pixels(img_data):
-    '''Define and return the key pixels that distinguishes an image.'''
+def obtain_key_px(img_data):
+    '''Obtian the key pixels that distinguishes an image.'''
     return np.concatenate((img_data[0], img_data[-1]))
 
 
-def get_key_px_dataset(new_path):
-    '''Get key data of images that are already saved in `new_path`.
+def get_px_dataset(new_path):
+    '''Get key pixels data of images that are already saved in `new_path`.
        Return a list containing key pixels of every exising image.
 
            new_path: new saving location for the spotlight images.'''
 
-    key_px_dataset = []
+    px_dataset = []
     for folder in ['desktop/', 'phone/', 'ignore/']:
         new_path_ = new_path+folder
         for img in os.listdir(new_path_):
             img_data = plt.imread(new_path_+img)
-            key_px_dataset.append(define_key_pixels(img_data))
+            px_dataset.append(obtain_key_px(img_data))
 
-    return key_px_dataset
+    return px_dataset
 
 
-def move_img_files(img, folder, new_path):
+def move_img_file(img, new_path, folder):
     ''' Move an image file from the current directory to `new_path`.
 
            img: the image file to be relocated.
            new_path: new saving location for the spotlight images.
-           folder: name of the saving folder.'''
+           folder: name of the saving folder in `new_path`.'''
 
     os.rename(img, new_path+folder+'/'+img)
     print('>> .\\'+folder+'\\'+img)
@@ -48,40 +48,47 @@ def run_extractor(spotlight_path, new_path, check_duplicates=True):
            new_path: new saving location for the spotlight images.
            check_duplicates: if True, check duplicates before saving.'''
 
+    os.chdir(spotlight_path)
+
     start_saving = False
 
     if check_duplicates:
         print('>> Checking duplicates...')
-        key_px_dataset = get_key_px_dataset(new_path)
+        px_dataset = get_px_dataset(new_path)
 
-    os.chdir(spotlight_path)
 
     for num, img in enumerate(os.listdir()):
         flag = False
         img_data = plt.imread(img)
 
         if check_duplicates:
-            new_key_pixels = define_key_pixels(img_data)
+            new_key_px = obtain_key_px(img_data)
 
-            for data in key_px_dataset:
-                if data.shape == new_key_pixels.shape and (new_key_pixels == data).all:
+            for data in px_dataset:
+                if data.shape == new_key_px.shape and (new_key_px == data).all:
+                    # duplicates found
                     flag = True
                     break
 
         if not flag:
+        # if not a duplicate image or if check_duplicates==False
+
             if not start_saving:
                 print('>> Saving...')
                 start_saving = True
             
+            # rename image using current date and `num`
             img_ = date.today().strftime('%Y%m%d')+'_'+str(num)+'.jpg'
             copyfile(img, img_)
 
             try:
-                if img_data.shape == (1080, 1920, 3):
-                    move_img_files(img_, 'desktop', new_path)
+                if img_data.shape[0] < img_data.shape[1]:
+                    # horizontal image normally with a shape of (1080, 1920, 3)
 
-                else:
-                    move_img_files(img_, 'phone', new_path)
+                    move_img_file(img_, new_path, 'desktop')
+
+                else:                                  # vertical image
+                    move_img_file(img_, new_path, 'phone')
 
             except:
                 os.remove(img_)
