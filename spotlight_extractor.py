@@ -12,7 +12,6 @@ def obtain_key_px(img_data):
     '''Obtian the key pixels that distinguishes an image.'''
     return np.concatenate((img_data[0], img_data[-1]))
 
-
 def get_px_dataset(new_path):
     '''Get key pixels data of images that are already saved in `new_path`.
        Return a list containing key pixels of every exising image.
@@ -30,9 +29,9 @@ def get_px_dataset(new_path):
 
 
 def move_img_file(img, new_path, folder):
-    ''' Move an image file from the current directory to `new_path`.
+    ''' Move an image file to a new path.
 
-           img: the image file to be relocated.
+           img: the name of image file to be relocated.
            new_path: new saving location for the spotlight images.
            folder: name of the saving folder in `new_path`.'''
 
@@ -65,8 +64,8 @@ def run_extractor(spotlight_path, new_path, check_duplicates=True):
             new_key_px = obtain_key_px(img_data)
 
             for data in px_dataset:
-                if data.shape == new_key_px.shape and (new_key_px == data).all:
-                    # duplicates found
+                if np.array_equal(data, new_key_px):
+                    # if the two array have the same shape and elements
                     flag = True
                     break
 
@@ -83,16 +82,15 @@ def run_extractor(spotlight_path, new_path, check_duplicates=True):
 
             try:
                 if img_data.shape[0] < img_data.shape[1]:
-                    # horizontal image normally with a shape of (1080, 1920, 3)
-
+                    # horizontal image, normally with a shape of (1080, 1920, 3)
                     move_img_file(img_, new_path, 'desktop')
 
                 else:                                  # vertical image
                     move_img_file(img_, new_path, 'phone')
 
-            except:
+            except:    
+                print(f'Error while moving the image file {img_}...')
                 os.remove(img_)
-
 
     if not start_saving:
         print('>> No new pics...')
@@ -102,5 +100,5 @@ def run_extractor(spotlight_path, new_path, check_duplicates=True):
 if __name__ == '__main__':
     
     new_path = r'/new_path/'
-    spotlight_path = r'/AppData/Local/Packages/Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy/LocalState/Assets'
+    spotlight_path = r'/AppData/Local/Packages/Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy/LocalState/Assets/'
     run_extractor(spotlight_path, new_path, check_duplicates=True)
