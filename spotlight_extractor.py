@@ -10,7 +10,8 @@ from datetime import date
 
 def obtain_key_px(img_data):
     '''Obtian the key pixels that distinguishes an image.'''
-    return np.concatenate((img_data[0], img_data[-1]))
+    return np.concatenate((img_data[0], img_data[-1]))   # img_data[len(img_data)//2]
+
 
 def get_px_dataset(new_path):
     '''Get key pixels data of images that are already saved in `new_path`.
@@ -18,12 +19,23 @@ def get_px_dataset(new_path):
 
            new_path: new saving location for the spotlight images.'''
 
-    px_dataset = []
-    for folder in ['desktop/', 'phone/', 'ignore/']:
-        new_path_ = new_path+folder
-        for img in os.listdir(new_path_):
-            img_data = plt.imread(new_path_+img)
-            px_dataset.append(obtain_key_px(img_data))
+    if 'img_ref.npz' not in os.listdir(new_path):
+        print('>> Creating image references...')
+        px_dataset = []
+
+        for folder in ['desktop/', 'phone/', 'ignore/']:
+            new_path_ = new_path + folder
+            for img in os.listdir(new_path_):
+                pixel_data = obtain_key_px(plt.imread(new_path_+img))
+                px_dataset.append(pixel_data)
+
+        with open(new_path+'img_ref.npz', 'wb') as f:
+            np.savez(f, *px_dataset)
+
+    else:
+        with open(new_path+'img_ref.npz','rb') as f:
+            px_dataset = np.load(f)
+            px_dataset = [px_dataset[key] for key in px_dataset]
 
     return px_dataset
 
@@ -65,18 +77,23 @@ def run_extractor(spotlight_path, new_path, check_duplicates=True):
 
             for data in px_dataset:
                 if np.array_equal(data, new_key_px):
-                    # if the two array have the same shape and elements
+                # if the two arrays have the same shape and elements
                     flag = True
                     break
 
         if not flag:
-        # if not a duplicate image or if check_duplicates==False
+        # if not a duplicate image or if not checking duplicates
+            
+            if check_duplicates:
+                # append the key pixels of the new image for later dup checks
+                px_dataset.append(new_key_px)  
 
             if not start_saving:
                 print('>> Saving...')
                 start_saving = True
-            
-            # rename image using current date and `num`
+
+
+            # copy the image and rename it using current date and its number
             img_ = date.today().strftime('%Y%m%d')+'_'+str(num)+'.jpg'
             copyfile(img, img_)
 
@@ -94,6 +111,11 @@ def run_extractor(spotlight_path, new_path, check_duplicates=True):
 
     if not start_saving:
         print('>> No new pics...')
+
+    elif check_duplicates: 
+        with open(new_path+'img_ref.npz', 'wb') as f:
+            np.savez(f, *px_dataset)
+        print('>> Image reference file updated.')
 
 
 
