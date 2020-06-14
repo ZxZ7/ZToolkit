@@ -9,8 +9,10 @@ from datetime import date
 
 
 def obtain_key_px(img_data):
-    '''Obtian the key pixels that distinguishes an image.'''
-    return np.concatenate((img_data[0], img_data[-1]))   # img_data[len(img_data)//2]
+    '''Obtian pixel data that can distinguishe an image.'''
+    first, last = img_data[0], img_data[-1]
+    first, last = first[len(first)//5*4:], last[:len(last)//5]
+    return np.concatenate((first, last))   # img_data[len(img_data)//2]
 
 
 def get_px_dataset(new_path):
@@ -24,9 +26,8 @@ def get_px_dataset(new_path):
         px_dataset = []
 
         for folder in ['desktop/', 'phone/', 'ignore/']:
-            new_path_ = new_path + folder
-            for img in os.listdir(new_path_):
-                pixel_data = obtain_key_px(plt.imread(new_path_+img))
+            for img in os.listdir(new_path+folder):
+                pixel_data = obtain_key_px(plt.imread(new_path+folder+img))
                 px_dataset.append(pixel_data)
 
         with open(new_path+'img_ref.npz', 'wb') as f:
@@ -58,6 +59,10 @@ def run_extractor(spotlight_path, new_path, check_duplicates=True):
            spotlight_path: location of the spotlight images.
            new_path: new saving location for the spotlight images.
            check_duplicates: if True, check duplicates before saving.'''
+
+    for folder in ['desktop/', 'phone/', 'ignore/']:
+        if not os.path.exists(new_path+folder):
+            os.makedirs(new_path+folder)
 
     os.chdir(spotlight_path)
 
